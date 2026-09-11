@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <?!= include('css'); ?>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <div class="sidebar">
+      <div class="logo">
+        <i class="fas fa-pallet"></i>
+        <h2>THX Paletes</h2>
+      </div>
+      <ul class="menu">
+        <li class="active" onclick="showTab('dashboard', this)">
+          <i class="fas fa-chart-pie icon-dashboard"></i> Dashboard
+        </li>
+        <li onclick="showTab('monitoramento', this)">
+          <i class="fas fa-truck icon-monitoramento"></i> Monitoramento
+        </li>
+        <li onclick="showTab('valepaletes', this)">
+          <i class="fas fa-box icon-valepaletes"></i> Vale-Paletes
+        </li>
+        <li onclick="showTab('protocolos', this)">
+          <i class="fas fa-file-alt icon-protocolos"></i> Protocolos
+        </li>
+        <li onclick="showTab('analise', this)">
+          <i class="fas fa-chart-line icon-analise"></i> Análise
+        </li>
+        <li onclick="showTab('prestacao', this)">
+          <i class="fas fa-handshake icon-prestacao"></i> Prestação Contas
+        </li>
+      </ul>
+      <div class="sidebar-footer">
+        <button onclick="toggleTheme()" class="theme-toggle-btn" id="themeBtn">
+          <span class="toggle-icon">🌙</span> <span id="themeLabel">Tema Escuro</span>
+        </button>
+        <button onclick="atualizarDados()" class="btn-primary" id="btnAtualizar">
+          <i class="fas fa-sync-alt"></i> Atualizar Base
+        </button>
+        <div id="ultimaAtualizacao" class="text-small mt-2"></div>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <header>
+        <div>
+          <h1>CONTROLE DE VALE-PALETES — THX</h1>
+          <p class="subtitle">Acompanhamento dos vale-paletes emitidos pela 3 Corações e prestação de contas operacional da THX</p>
+        </div>
+      </header>
+
+      <div id="loader" class="loader-container" style="display:none;">
+        <div class="spinner"></div>
+        <p>Atualizando dados da operação...</p>
+      </div>
+
+      <!-- DASHBOARD -->
+      <div id="tab-dashboard" class="tab-content active">
+        <div class="cards-grid">
+          <div class="card card-green">
+            <div class="card-title">✅ PALETES DEVOLVIDOS</div>
+            <div class="card-value" id="dash-devolvidos">0</div>
+          </div>
+          <div class="card card-red">
+            <div class="card-title">🚨 OCORRÊNCIAS EM ATRASO</div>
+            <div class="card-value" id="dash-vp-atrasados">0</div>
+          </div>
+          <div class="card card-yellow">
+            <div class="card-title">⏳ OCORRÊNCIAS NO PRAZO (3 DIAS)</div>
+            <div class="card-value" id="dash-vp-noprazo">0</div>
+          </div>
+          <div class="card card-blue">
+            <div class="card-title">📋 PENDENTES C/ PROTOCOLO</div>
+            <div class="card-value" id="dash-vp-comprotocolo">0</div>
+          </div>
+          <div class="card card-orange">
+            <div class="card-title">📦 PALETES EM ATRASO</div>
+            <div class="card-value" id="dash-paletes-atrasados">0</div>
+          </div>
+          <div class="card card-red" style="background: linear-gradient(135deg, #be123c, #881337);">
+            <div class="card-title">💰 VALOR DA PENDÊNCIA</div>
+            <div class="card-value" id="dash-valor-atrasado">R$ 0,00</div>
+            <div class="card-subtitle">R$ 35,00 por palete em atraso</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MONITORAMENTO -->
+      <div id="tab-monitoramento" class="tab-content">
+        <h2>🚛 MONITORAMENTO DA RUA (ÚLTIMOS 3 DIAS)</h2>
+        <div class="filters-bar">
+          <button class="btn-filter filter-todos active" onclick="filtrarMonitoramento('TODOS', this)">
+            🔘 TODOS
+          </button>
+          <button class="btn-filter filter-devolvido" onclick="filtrarMonitoramento('DENTRO DO PRAZO', this)">
+            ⏳ DENTRO DO PRAZO
+          </button>
+          <button class="btn-filter filter-noprazo" onclick="filtrarMonitoramento('EMITIDOS ONTEM', this)">
+            📅 EMITIDOS ONTEM
+          </button>
+        </div>
+        <div class="table-container">
+          <table id="table-monitoramento">
+            <thead>
+              <tr>
+                <th>Vale-Palete</th>
+                <th>Data Ocorrência</th>
+                <th>Plano</th>
+                <th>Cliente</th>
+                <th>Placa</th>
+                <th>Motorista</th>
+                <th>Perfil</th>
+                <th>Qtde</th>
+                <th>Protocolo</th>
+                <th>Dias Aberto</th>
+                <th>Situação</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- VALE-PALETES -->
+      <div id="tab-valepaletes" class="tab-content">
+        <div class="flex-between">
+          <h2>📦 VALE-PALETES</h2>
+          <div class="search-bar">
+            <div class="search-bar-wrapper">
+              <i class="fas fa-search"></i>
+              <input type="text" id="searchInput" placeholder="Pesquisar por VP, plano, motorista..." onkeyup="renderValePaletes()">
+            </div>
+            <button onclick="exportarCSV()" class="btn-secondary"><i class="fas fa-download"></i> Exportar</button>
+          </div>
+        </div>
+        <div class="filters-bar mt-2">
+          <button class="btn-filter filter-todos active"     onclick="filtrarVP('TODOS', this)">🔘 TODOS</button>
+          <button class="btn-filter filter-devolvido"        onclick="filtrarVP('DEVOLVIDO', this)">🟢 DEVOLVIDOS</button>
+          <button class="btn-filter filter-atraso"           onclick="filtrarVP('PENDENTE EM ATRASO', this)">🔴 EM ATRASO</button>
+          <button class="btn-filter filter-noprazo"          onclick="filtrarVP('PENDENTE NO PRAZO', this)">🟡 NO PRAZO</button>
+          <button class="btn-filter filter-protocolo"        onclick="filtrarVP('PENDENTE COM PROTOCOLO', this)">🔵 COM PROTOCOLO</button>
+        </div>
+        <div class="table-container mt-2">
+          <table id="table-valepaletes">
+            <thead>
+              <tr>
+                <th>VP</th>
+                <th>Plano</th>
+                <th>Ocorrência</th>
+                <th>Cliente</th>
+                <th>Motorista</th>
+                <th>Placa</th>
+                <th>Qtde</th>
+                <th>Valor (R$)</th>
+                <th>Protocolo</th>
+                <th>Devolução</th>
+                <th>Situação</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PROTOCOLOS -->
+      <div id="tab-protocolos" class="tab-content">
+        <h2>📋 PROTOCOLOS</h2>
+        <div class="filters-bar">
+          <button class="btn-filter filter-todos active"   onclick="filtrarProtocolos('TODOS', this)">🔘 TODOS</button>
+          <button class="btn-filter filter-devolvido"      onclick="filtrarProtocolos('SIM', this)">🟢 LOCALIZADO</button>
+          <button class="btn-filter filter-atraso"         onclick="filtrarProtocolos('NAO', this)">🟠 NÃO LOCALIZADO</button>
+        </div>
+        <div class="table-container">
+          <table id="table-protocolos">
+            <thead>
+              <tr>
+                <th>Vale-Palete</th>
+                <th>Plano</th>
+                <th>Devolução</th>
+                <th>Protocolo</th>
+                <th>Encontrado</th>
+                <th>Situação</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ANÁLISE -->
+      <div id="tab-analise" class="tab-content">
+        <h2>📈 ANÁLISE</h2>
+        <div class="charts-grid">
+          <div class="chart-container">
+            <canvas id="chartStatusPaletes"></canvas>
+          </div>
+          <div class="chart-container">
+            <canvas id="chartPendenciasMotorista"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- PRESTAÇÃO DE CONTAS -->
+      <div id="tab-prestacao" class="tab-content">
+        <h2>📋 PRESTAÇÃO DE CONTAS</h2>
+        <div class="prestacao-card mt-3">
+          <div class="p-row"><span>Total de paletes vinculados à operação:</span> <strong id="pc-total">0</strong></div>
+          <div class="p-row"><span>Total devolvido:</span> <strong id="pc-devolvido">0</strong></div>
+          <div class="p-row"><span>Total pendente (Físico):</span> <strong id="pc-pendente">0</strong></div>
+          <div class="p-row text-red"><span>Total em atraso (Físico):</span> <strong id="pc-atraso">0</strong></div>
+          <div class="p-row text-red"><span>Passivo Financeiro Estimado (R$ 35/palete):</span> <strong id="pc-valor">R$ 0,00</strong></div>
+        </div>
+      </div>
+
+    </div>
+
+    <?!= include('js'); ?>
+  </body>
+</html>

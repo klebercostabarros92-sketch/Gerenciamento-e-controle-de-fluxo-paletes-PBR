@@ -1,0 +1,302 @@
+<script>
+  let dadosGlobais = [];
+  let filtroStatusVP = 'TODOS';
+  let filtroStatusProt = 'TODOS';
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // Restore theme
+    if (localStorage.getItem('thx-theme') === 'dark') {
+      document.body.classList.add('dark');
+      document.getElementById('themeLabel').innerText = 'Tema Claro';
+      document.querySelector('.theme-toggle-btn .toggle-icon').innerText = '☀️';
+    }
+    atualizarDados();
+  });
+
+  /* ===== THEME TOGGLE ===== */
+  function toggleTheme() {
+    const isDark = document.body.classList.toggle('dark');
+    const label = document.getElementById('themeLabel');
+    const icon = document.querySelector('.theme-toggle-btn .toggle-icon');
+    if (isDark) {
+      label.innerText = 'Tema Claro';
+      icon.innerText = '☀️';
+      localStorage.setItem('thx-theme', 'dark');
+    } else {
+      label.innerText = 'Tema Escuro';
+      icon.innerText = '🌙';
+      localStorage.setItem('thx-theme', 'light');
+    }
+    renderCharts();
+  }
+
+  /* ===== TABS ===== */
+  function showTab(tabId, el) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.sidebar .menu li').forEach(l => l.classList.remove('active'));
+    document.getElementById('tab-' + tabId).classList.add('active');
+    if (el) el.classList.add('active');
+  }
+
+  function showLoader() { document.getElementById('loader').style.display = 'flex'; }
+  function hideLoader() { document.getElementById('loader').style.display = 'none'; }
+
+  /* ===== DADOS ===== */
+  function atualizarDados() {
+    showLoader();
+    google.script.run.withSuccessHandler(res => {
+      const resp = JSON.parse(res);
+      if (resp.success) {
+        dadosGlobais = resp.data;
+        renderDashboard();
+        renderMonitoramento('TODOS');
+        renderValePaletes();
+        renderProtocolos();
+        renderPrestacaoContas();
+        renderCharts();
+        const now = new Date();
+        document.getElementById('ultimaAtualizacao').innerText =
+          'Atualizado: ' + now.toLocaleDateString('pt-BR') + ' ' + now.toLocaleTimeString('pt-BR');
+      } else {
+        alert('Erro ao carregar dados: ' + resp.error);
+      }
+      hideLoader();
+    }).obterDadosCompletos();
+  }
+
+  /* ===== FORMATTERS ===== */
+  function formatData(dataStr) {
+    if (!dataStr) return '-';
+    const d = new Date(dataStr);
+    return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR').substring(0, 5);
+  }
+
+  function formatMoney(value) {
+    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  /* ===== DASHBOARD ===== */
+  function renderDashboard() {
+    let devolvidos = 0, vpAtrasados = 0, vpNoPrazo = 0, vpComProtocolo = 0, paletesAtrasados = 0;
+    dadosGlobais.forEach(reg => {
+      if (reg.situacao === 'DEVOLVIDO')              { devolvidos       += reg.qtdePaletes; }
+      if (reg.situacao === 'PENDENTE EM ATRASO')     { vpAtrasados++;      paletesAtrasados += reg.qtdePaletes; }
+      if (reg.situacao === 'PENDENTE NO PRAZO')       { vpNoPrazo++; }
+      if (reg.situacao === 'PENDENTE COM PROTOCOLO')  { vpComProtocolo++; }
+    });
+    document.getElementById('dash-devolvidos').innerText       = devolvidos;
+    document.getElementById('dash-vp-atrasados').innerText     = vpAtrasados;
+    document.getElementById('dash-vp-noprazo').innerText       = vpNoPrazo;
+    document.getElementById('dash-vp-comprotocolo').innerText  = vpComProtocolo;
+    document.getElementById('dash-paletes-atrasados').innerText = paletesAtrasados;
+    document.getElementById('dash-valor-atrasado').innerText   = formatMoney(paletesAtrasados * 35);
+  }
+
+  /* ===== MONITORAMENTO ===== */
+  function filtrarMonitoramento(filtro, el) {
+    document.querySelectorAll('#tab-monitoramento .btn-filter').forEach(b => b.classList.remove('active'));
+    if (el) el.classList.add('active');
+    renderMonitoramento(filtro);
+  }
+
+  function renderMonitoramento(filtro) {
+    const tbody = document.querySelector('#table-monitoramento tbody');
+    tbody.innerHTML = '';
+    const filtrados = dadosGlobais.filter(reg => {
+      if (reg.dataDevolucao) return false;
+      if (reg.diasAberto > 3) return false;
+      if (filtro === 'EMITIDOS ONTEM') return reg.emitidoOntem;
+      if (filtro === 'DENTRO DO PRAZO') return reg.situacao === 'PENDENTE NO PRAZO';
+      return true;
+    });
+    filtrados.forEach(reg => {
+      tbody.innerHTML += `
+        <tr>
+          <td><strong>${reg.valePalete}</strong></td>
+          <td>${formatData(reg.dataOcorrencia)}</td>
+          <td>${reg.plano}</td>
+          <td>${reg.cliente}</td>
+          <td>${reg.placa}</td>
+          <td>${reg.motorista}</td>
+          <td>${reg.perfil}</td>
+          <td>${reg.qtdePaletes}</td>
+          <td><strong>${reg.numeroProtocolo || '-'}</strong></td>
+          <td>${reg.diasAberto} dias</td>
+          <td><span class="badge bg-yellow">${reg.cor} ${reg.situacao}</span></td>
+        </tr>`;
+    });
+    if (filtrados.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:30px;color:var(--text-light)">Nenhum registro encontrado.</td></tr>';
+    }
+  }
+
+  /* ===== VALE-PALETES ===== */
+  function filtrarVP(status, el) {
+    filtroStatusVP = status;
+    document.querySelectorAll('#tab-valepaletes .btn-filter').forEach(b => b.classList.remove('active'));
+    if (el) el.classList.add('active');
+    renderValePaletes();
+  }
+
+  function renderValePaletes() {
+    const tbody = document.querySelector('#table-valepaletes tbody');
+    tbody.innerHTML = '';
+    const texto = (document.getElementById('searchInput').value || '').toLowerCase();
+
+    const filtrados = dadosGlobais.filter(reg => {
+      // Status filter
+      if (filtroStatusVP !== 'TODOS' && reg.situacao !== filtroStatusVP) return false;
+      // Text search
+      if (texto) {
+        const haystack = [reg.valePalete, reg.motorista, reg.placa, reg.plano, reg.cliente]
+          .map(v => String(v || '').toLowerCase()).join(' ');
+        if (!haystack.includes(texto)) return false;
+      }
+      return true;
+    });
+
+    filtrados.forEach(reg => {
+      let badge = 'bg-yellow';
+      if (reg.situacao === 'DEVOLVIDO')             badge = 'bg-green';
+      else if (reg.situacao === 'PENDENTE COM PROTOCOLO') badge = 'bg-blue';
+      else if (reg.situacao === 'PENDENTE NO PRAZO')      badge = 'bg-yellow';
+      else if (reg.situacao === 'PENDENTE EM ATRASO')     badge = 'bg-red';
+
+      tbody.innerHTML += `
+        <tr>
+          <td><strong>${reg.valePalete}</strong></td>
+          <td>${reg.plano}</td>
+          <td>${formatData(reg.dataOcorrencia)}</td>
+          <td>${reg.cliente}</td>
+          <td>${reg.motorista}</td>
+          <td>${reg.placa}</td>
+          <td>${reg.qtdePaletes}</td>
+          <td><strong>${formatMoney(reg.qtdePaletes * 35)}</strong></td>
+          <td><strong>${reg.numeroProtocolo || '-'}</strong></td>
+          <td>${formatData(reg.dataDevolucao)}</td>
+          <td><span class="badge ${badge}">${reg.cor} ${reg.situacao}</span></td>
+        </tr>`;
+    });
+
+    if (filtrados.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:30px;color:var(--text-light)">Nenhum registro encontrado.</td></tr>';
+    }
+  }
+
+  /* ===== PROTOCOLOS ===== */
+  function filtrarProtocolos(filtro, el) {
+    filtroStatusProt = filtro;
+    document.querySelectorAll('#tab-protocolos .btn-filter').forEach(b => b.classList.remove('active'));
+    if (el) el.classList.add('active');
+    renderProtocolos();
+  }
+
+  function renderProtocolos() {
+    const tbody = document.querySelector('#table-protocolos tbody');
+    tbody.innerHTML = '';
+    dadosGlobais.forEach(reg => {
+      if (filtroStatusProt === 'SIM'  && !reg.temProtocolo) return;
+      if (filtroStatusProt === 'NAO'  && reg.temProtocolo)  return;
+
+      let badge = 'bg-orange', statusMsg = '🟠 NÃO LOCALIZADO', encMsg = 'NÃO';
+      if (reg.temProtocolo) { badge = 'bg-green'; statusMsg = '🟢 LOCALIZADO'; encMsg = 'SIM'; }
+
+      tbody.innerHTML += `
+        <tr>
+          <td><strong>${reg.valePalete}</strong></td>
+          <td>${reg.plano}</td>
+          <td>${formatData(reg.dataDevolucao)}</td>
+          <td><strong>${reg.numeroProtocolo || '-'}</strong></td>
+          <td>${encMsg}</td>
+          <td><span class="badge ${badge}">${statusMsg}</span></td>
+        </tr>`;
+    });
+  }
+
+  /* ===== PRESTAÇÃO DE CONTAS ===== */
+  function renderPrestacaoContas() {
+    let total = 0, devolvidos = 0, pendentes = 0, atrasados = 0;
+    dadosGlobais.forEach(reg => {
+      total += reg.qtdePaletes;
+      if (reg.situacao === 'DEVOLVIDO') devolvidos += reg.qtdePaletes;
+      else pendentes += reg.qtdePaletes;
+      if (reg.situacao === 'PENDENTE EM ATRASO') atrasados += reg.qtdePaletes;
+    });
+    document.getElementById('pc-total').innerText    = total;
+    document.getElementById('pc-devolvido').innerText = devolvidos;
+    document.getElementById('pc-pendente').innerText  = pendentes;
+    document.getElementById('pc-atraso').innerText    = atrasados;
+    document.getElementById('pc-valor').innerText     = formatMoney(atrasados * 35);
+  }
+
+  /* ===== EXPORT CSV ===== */
+  function exportarCSV() {
+    const texto = (document.getElementById('searchInput').value || '').toLowerCase();
+    let csv = 'Vale-Palete;Ocorrencia;Plano;Cliente;Placa;Motorista;Perfil;Qtde;Valor;Protocolo;Devolucao;Situacao\n';
+    dadosGlobais.filter(reg => {
+      if (filtroStatusVP !== 'TODOS' && reg.situacao !== filtroStatusVP) return false;
+      if (texto) {
+        const h = [reg.valePalete, reg.motorista, reg.placa, reg.plano, reg.cliente].map(v => String(v||'').toLowerCase()).join(' ');
+        return h.includes(texto);
+      }
+      return true;
+    }).forEach(reg => {
+      csv += `${reg.valePalete};${formatData(reg.dataOcorrencia)};${reg.plano};${reg.cliente};${reg.placa};${reg.motorista};${reg.perfil};${reg.qtdePaletes};${formatMoney(reg.qtdePaletes*35)};${reg.numeroProtocolo};${formatData(reg.dataDevolucao)};${reg.situacao}\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.setAttribute('href', URL.createObjectURL(blob));
+    link.setAttribute('download', 'thx_paletes_export.csv');
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  /* ===== CHARTS ===== */
+  let chartStatus = null, chartMot = null;
+
+  function renderCharts() {
+    const isDark = document.body.classList.contains('dark');
+    const textColor = isDark ? '#94a3b8' : '#334155';
+
+    let dev = 0, pendPrazo = 0, atr = 0, pendProt = 0;
+    let motData = {};
+    dadosGlobais.forEach(r => {
+      if (r.situacao === 'DEVOLVIDO')             dev      += r.qtdePaletes;
+      if (r.situacao === 'PENDENTE NO PRAZO')      pendPrazo += r.qtdePaletes;
+      if (r.situacao === 'PENDENTE EM ATRASO')     atr       += r.qtdePaletes;
+      if (r.situacao === 'PENDENTE COM PROTOCOLO') pendProt  += r.qtdePaletes;
+      if (r.situacao === 'PENDENTE EM ATRASO') {
+        if (!motData[r.motorista]) motData[r.motorista] = 0;
+        motData[r.motorista] += r.qtdePaletes;
+      }
+    });
+
+    if (chartStatus) chartStatus.destroy();
+    if (chartMot) chartMot.destroy();
+
+    Chart.defaults.color = textColor;
+
+    const ctx1 = document.getElementById('chartStatusPaletes').getContext('2d');
+    chartStatus = new Chart(ctx1, {
+      type: 'doughnut',
+      data: {
+        labels: ['Devolvido', 'No Prazo', 'Em Atraso', 'Com Protocolo'],
+        datasets: [{ data: [dev, pendPrazo, atr, pendProt], backgroundColor: ['#22c55e', '#eab308', '#ef4444', '#3b82f6'] }]
+      },
+      options: { plugins: { title: { display: true, text: 'Status dos Paletes' } } }
+    });
+
+    const sortedMot = Object.entries(motData).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    const ctx2 = document.getElementById('chartPendenciasMotorista').getContext('2d');
+    chartMot = new Chart(ctx2, {
+      type: 'bar',
+      data: {
+        labels: sortedMot.map(m => m[0]),
+        datasets: [{ label: 'Paletes Atrasados', data: sortedMot.map(m => m[1]), backgroundColor: '#ef4444' }]
+      },
+      options: { plugins: { title: { display: true, text: 'Top 10 Motoristas c/ Atraso' } } }
+    });
+  }
+</script>

@@ -1,0 +1,11 @@
+const CONFIG = {
+  PLANILHA_3_CORACOES_ID: '1Q4WiwLfM2ANRnbPcCkPnec0j06VuexbF_0oXQYC3OkI',
+  PLANILHA_PROTOCOLOS_ID: '1YChZ_70Bu0xa82JZ9Q-1IqpoYgg8tnDLx7xQMNCcxZ0',
+  ABA_PROTOCOLOS: 'protocolo geral',
+  TRANSPORTADORA: 'THX',
+  PRAZO_HORAS: 72,
+  HORARIO_COBRANCA: 22,
+  DIAS_COBRANCA: [0, 1, 2, 3, 4, 5], // Domingo a Sexta
+  TIMEZONE: 'America/Sao_Paulo',
+  MODO_TESTE: true
+};
