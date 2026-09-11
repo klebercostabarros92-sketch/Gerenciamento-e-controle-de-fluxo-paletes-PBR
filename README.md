@@ -1,3 +1,4 @@
+[README.md](https://github.com/user-attachments/files/32126107/README.md)
 Controle de Vale-Paletes — THX
 Web app em Google Apps Script (GAS) para acompanhamento dos vale-paletes emitidos pela 3 Corações e transportados pela THX, com cruzamento automático de protocolos, cobrança automática de motoristas em atraso e dashboard de prestação de contas.
 Publicado como Web App (`doGet`) a partir do script ID configurado em `.clasp.json`, sincronizado via `clasp`.
