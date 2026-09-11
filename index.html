@@ -152,12 +152,14 @@
                 <th>Ocorrência</th>
                 <th>Cliente</th>
                 <th>Motorista</th>
+                <th>Status Mot.</th>
                 <th>Placa</th>
                 <th>Qtde</th>
                 <th>Valor (R$)</th>
                 <th>Protocolo</th>
                 <th>Devolução</th>
                 <th>Situação</th>
+                <th>Ação / Tratativa</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -183,6 +185,7 @@
                 <th>Protocolo</th>
                 <th>Encontrado</th>
                 <th>Situação</th>
+                <th>Ação</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -216,6 +219,58 @@
       </div>
 
     </div>
+
+    <!-- MODAL SOLICITAÇÃO LUIZ -->
+    <div id="modalEmailLuiz" class="modal-overlay" style="display:none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3><i class="fas fa-envelope-open-text" style="color:#2563eb"></i> Solicitar Baixa ao Luiz (3 Corações)</h3>
+          <button class="modal-close-btn" onclick="fecharModalEmailLuiz()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+            <span class="modal-destinatario-tag" style="background:#e0e7ff;color:#3730a3">
+              <i class="fas fa-user-check"></i> De: <strong>kleber.costa@thxgroup.com.br</strong>
+            </span>
+            <span class="modal-destinatario-tag">
+              <i class="fas fa-paper-plane"></i> Para: <strong>luizhenrique@3coracoes.com.br</strong>
+            </span>
+          </div>
+          
+          <div class="modal-info-box">
+            <div class="modal-info-grid">
+              <div><strong>Vale-Palete:</strong> <span id="modal-vp">-</span></div>
+              <div><strong>Protocolo THX:</strong> <span id="modal-protocolo" style="color:#059669;font-weight:bold">-</span></div>
+              <div><strong>Plano:</strong> <span id="modal-plano">-</span></div>
+              <div><strong>Cliente:</strong> <span id="modal-cliente">-</span></div>
+              <div><strong>Motorista:</strong> <span id="modal-motorista">-</span></div>
+              <div><strong>Placa:</strong> <span id="modal-placa">-</span></div>
+              <div><strong>Qtde:</strong> <span id="modal-qtde">-</span></div>
+              <div><strong>Valor:</strong> <span id="modal-valor" style="color:#dc2626;font-weight:bold">-</span></div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px">
+            <label style="font-size:0.8rem;font-weight:600;color:var(--text-light)">PRÉ-VISUALIZAÇÃO DO E-MAIL:</label>
+            <div id="modal-preview-corpo" style="margin-top:4px;padding:10px;background:var(--input-bg);border:1px solid var(--border-color);border-radius:6px;font-size:0.82rem;max-height:140px;overflow-y:auto;white-space:pre-line;color:var(--text-primary)"></div>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-secondary" onclick="fecharModalEmailLuiz()">Cancelar</button>
+          <a id="modal-btn-gmail" href="#" target="_blank" onclick="registrarEnvioManual()" class="btn-secondary" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;background:#ea4335;color:white">
+            <i class="fab fa-google"></i> Abrir no Gmail (Kleber)
+          </a>
+          <a id="modal-btn-mailto" href="#" target="_blank" onclick="registrarEnvioManual()" class="btn-secondary" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">
+            <i class="fas fa-envelope"></i> Outlook / Padrão
+          </a>
+          <button class="btn-primary" id="modal-btn-enviar" onclick="confirmarEnvioEmailLuiz()" style="width:auto;display:inline-flex;align-items:center;gap:6px">
+            <i class="fas fa-paper-plane"></i> Enviar Automático
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toastNotification" class="toast-notification" style="display:none;"></div>
 
     <?!= include('js'); ?>
   </body>

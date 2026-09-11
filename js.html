@@ -162,6 +162,12 @@
       else if (reg.situacao === 'PENDENTE NO PRAZO')      badge = 'bg-yellow';
       else if (reg.situacao === 'PENDENTE EM ATRASO')     badge = 'bg-red';
 
+      const statusMot = reg.statusMotorista || 'ATIVO';
+      const statusMotClass = statusMot === 'INATIVO' ? 'mot-inativo' : 'mot-ativo';
+      const temLink = Boolean(reg.linkAcao && reg.linkAcao.trim());
+      const isProtocolado = Boolean(reg.temProtocolo || reg.situacao === 'PENDENTE COM PROTOCOLO');
+      const foiSolicitado = Boolean(reg.solicitacaoLuiz);
+
       tbody.innerHTML += `
         <tr>
           <td><strong>${reg.valePalete}</strong></td>
@@ -169,17 +175,39 @@
           <td>${formatData(reg.dataOcorrencia)}</td>
           <td>${reg.cliente}</td>
           <td>${reg.motorista}</td>
+          <td>
+            <select class="select-status-mot ${statusMotClass}" onchange="alterarStatusMotorista('${reg.valePalete}', this)">
+              <option value="ATIVO" ${statusMot === 'ATIVO' ? 'selected' : ''}>🟢 Ativo</option>
+              <option value="INATIVO" ${statusMot === 'INATIVO' ? 'selected' : ''}>🔴 Inativo</option>
+            </select>
+          </td>
           <td>${reg.placa}</td>
           <td>${reg.qtdePaletes}</td>
           <td><strong>${formatMoney(reg.qtdePaletes * 35)}</strong></td>
           <td><strong>${reg.numeroProtocolo || '-'}</strong></td>
           <td>${formatData(reg.dataDevolucao)}</td>
           <td><span class="badge ${badge}">${reg.cor} ${reg.situacao}</span></td>
+          <td>
+            <div class="col-acao-cell">
+              <div class="input-link-wrapper">
+                <input type="text" placeholder="Link tratativa..." value="${escapeHtml(reg.linkAcao || '')}"
+                       onchange="salvarLinkTratativa('${reg.valePalete}', this.value)" class="input-link-acao" title="Cole o link da tratativa" />
+                ${temLink ? `<a href="${encodeURI(reg.linkAcao)}" target="_blank" class="btn-open-link" title="Abrir link da tratativa"><i class="fas fa-external-link-alt"></i></a>` : ''}
+              </div>
+              ${isProtocolado ? `
+                <button class="btn-solicitar-luiz ${foiSolicitado ? 'ja-enviado' : ''}" 
+                        onclick="abrirModalEmailLuiz('${reg.valePalete}')" 
+                        title="${foiSolicitado ? 'E-mail enviado em ' + reg.solicitacaoLuiz : 'Solicitar exclusão da pendência protocolada ao Luiz (luizhenrique@3coracoes.com.br)'}">
+                  <i class="fas fa-paper-plane"></i> ${foiSolicitado ? 'Solicitado ✅' : 'Solicitar ao Luiz'}
+                </button>
+              ` : ''}
+            </div>
+          </td>
         </tr>`;
     });
 
     if (filtrados.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:30px;color:var(--text-light)">Nenhum registro encontrado.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:30px;color:var(--text-light)">Nenhum registro encontrado.</td></tr>';
     }
   }
 
@@ -200,6 +228,7 @@
 
       let badge = 'bg-orange', statusMsg = '🟠 NÃO LOCALIZADO', encMsg = 'NÃO';
       if (reg.temProtocolo) { badge = 'bg-green'; statusMsg = '🟢 LOCALIZADO'; encMsg = 'SIM'; }
+      const foiSolicitado = Boolean(reg.solicitacaoLuiz);
 
       tbody.innerHTML += `
         <tr>
@@ -209,6 +238,15 @@
           <td><strong>${reg.numeroProtocolo || '-'}</strong></td>
           <td>${encMsg}</td>
           <td><span class="badge ${badge}">${statusMsg}</span></td>
+          <td>
+            ${reg.temProtocolo ? `
+              <button class="btn-solicitar-luiz ${foiSolicitado ? 'ja-enviado' : ''}" 
+                      onclick="abrirModalEmailLuiz('${reg.valePalete}')" 
+                      title="${foiSolicitado ? 'E-mail enviado em ' + reg.solicitacaoLuiz : 'Solicitar exclusão da pendência ao Luiz (luizhenrique@3coracoes.com.br)'}">
+                <i class="fas fa-paper-plane"></i> ${foiSolicitado ? 'Solicitado ✅' : 'Solicitar ao Luiz'}
+              </button>
+            ` : '-'}
+          </td>
         </tr>`;
     });
   }
@@ -232,7 +270,7 @@
   /* ===== EXPORT CSV ===== */
   function exportarCSV() {
     const texto = (document.getElementById('searchInput').value || '').toLowerCase();
-    let csv = 'Vale-Palete;Ocorrencia;Plano;Cliente;Placa;Motorista;Perfil;Qtde;Valor;Protocolo;Devolucao;Situacao\n';
+    let csv = 'Vale-Palete;Ocorrencia;Plano;Cliente;Motorista;Status Motorista;Placa;Qtde;Valor;Protocolo;Devolucao;Situacao;Link Acao;Solicitacao Luiz\n';
     dadosGlobais.filter(reg => {
       if (filtroStatusVP !== 'TODOS' && reg.situacao !== filtroStatusVP) return false;
       if (texto) {
@@ -241,7 +279,7 @@
       }
       return true;
     }).forEach(reg => {
-      csv += `${reg.valePalete};${formatData(reg.dataOcorrencia)};${reg.plano};${reg.cliente};${reg.placa};${reg.motorista};${reg.perfil};${reg.qtdePaletes};${formatMoney(reg.qtdePaletes*35)};${reg.numeroProtocolo};${formatData(reg.dataDevolucao)};${reg.situacao}\n`;
+      csv += `${reg.valePalete};${formatData(reg.dataOcorrencia)};${reg.plano};${reg.cliente};${reg.motorista};${reg.statusMotorista||'ATIVO'};${reg.placa};${reg.qtdePaletes};${formatMoney(reg.qtdePaletes*35)};${reg.numeroProtocolo};${formatData(reg.dataDevolucao)};${reg.situacao};${reg.linkAcao||''};${reg.solicitacaoLuiz||''}\n`;
     });
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
@@ -251,6 +289,191 @@
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  }
+
+  /* ===== AÇÕES MOTORISTA & TRATATIVA ===== */
+  function alterarStatusMotorista(valePalete, selectEl) {
+    const novoStatus = selectEl.value;
+    selectEl.classList.remove('mot-ativo', 'mot-inativo');
+    selectEl.classList.add(novoStatus === 'INATIVO' ? 'mot-inativo' : 'mot-ativo');
+
+    const reg = dadosGlobais.find(r => r.valePalete === valePalete);
+    if (reg) reg.statusMotorista = novoStatus;
+
+    google.script.run
+      .withSuccessHandler(() => {
+        mostrarToast('Status do motorista salvo com sucesso!');
+      })
+      .withFailureHandler(err => {
+        alert('Erro ao salvar status: ' + err);
+      })
+      .salvarAcompanhamento(valePalete, 'statusMotorista', novoStatus);
+  }
+
+  function salvarLinkTratativa(valePalete, valor) {
+    const reg = dadosGlobais.find(r => r.valePalete === valePalete);
+    if (reg) reg.linkAcao = valor.trim();
+
+    google.script.run
+      .withSuccessHandler(() => {
+        mostrarToast('Link de tratativa salvo!');
+        renderValePaletes();
+      })
+      .withFailureHandler(err => {
+        alert('Erro ao salvar link: ' + err);
+      })
+      .salvarAcompanhamento(valePalete, 'linkAcao', valor.trim());
+  }
+
+  /* ===== MODAL E ENVIO DE E-MAIL AO LUIZ ===== */
+  let regParaEnvioLuiz = null;
+
+  function abrirModalEmailLuiz(valePalete) {
+    const reg = dadosGlobais.find(r => r.valePalete === valePalete);
+    if (!reg) return;
+    regParaEnvioLuiz = reg;
+
+    document.getElementById('modal-vp').innerText = reg.valePalete || '-';
+    document.getElementById('modal-protocolo').innerText = reg.numeroProtocolo || '-';
+    document.getElementById('modal-plano').innerText = reg.plano || '-';
+    document.getElementById('modal-cliente').innerText = reg.cliente || '-';
+    document.getElementById('modal-motorista').innerText = reg.motorista || '-';
+    document.getElementById('modal-placa').innerText = reg.placa || '-';
+    document.getElementById('modal-qtde').innerText = (reg.qtdePaletes || 0) + ' paletes';
+    document.getElementById('modal-valor').innerText = formatMoney((reg.qtdePaletes || 0) * 35);
+
+    const emailKleber = 'kleber.costa@thxgroup.com.br';
+    const emailLuiz = 'luizhenrique@3coracoes.com.br';
+    const assunto = `Solicitação de Baixa de Vale-Palete Protocolado — VP: ${reg.valePalete} / Plano: ${reg.plano || '-'} — THX`;
+    const corpo = 
+`Olá Luiz,
+
+Identificamos que o vale-palete abaixo já foi devidamente protocolado internamente pela THX, porém ainda consta com pendência de devolução no controle da 3 Corações:
+
+• Vale-Palete: ${reg.valePalete}
+• Nº Protocolo THX: ${reg.numeroProtocolo || '-'}
+• Nº Plano de Viagem: ${reg.plano || '-'}
+• Data da Ocorrência: ${formatData(reg.dataOcorrencia)}
+• Cliente: ${reg.cliente || '-'}
+• Motorista: ${reg.motorista || '-'}
+• Placa: ${reg.placa || '-'}
+• Quantidade: ${reg.qtdePaletes || 0} paletes
+• Valor: ${formatMoney((reg.qtdePaletes || 0) * 35)}
+
+Solicitamos a gentileza de providenciar a baixa/exclusão desta pendência na base da 3 Corações.
+
+Atenciosamente,
+Kleber Costa
+Controle Operacional de Vale-Paletes — THX Transportes
+${emailKleber}`;
+
+    document.getElementById('modal-preview-corpo').innerText = corpo;
+
+    // Link direto do Gmail Web com Kleber em CC
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(emailLuiz)}&cc=${encodeURIComponent(emailKleber)}&su=${encodeURIComponent(assunto)}&body=${encodeURIComponent(corpo)}`;
+    document.getElementById('modal-btn-gmail').href = gmailUrl;
+
+    // Link mailto padrão com Kleber em CC
+    const mailtoUrl = `mailto:${emailLuiz}?cc=${encodeURIComponent(emailKleber)}&subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(corpo)}`;
+    document.getElementById('modal-btn-mailto').href = mailtoUrl;
+
+    const btnEnviar = document.getElementById('modal-btn-enviar');
+    btnEnviar.disabled = false;
+    btnEnviar.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar Automático';
+
+    document.getElementById('modalEmailLuiz').style.display = 'flex';
+  }
+
+  function registrarEnvioManual() {
+    if (!regParaEnvioLuiz) return;
+    const vp = regParaEnvioLuiz.valePalete;
+    const dataEnvio = new Date().toLocaleString('pt-BR');
+    regParaEnvioLuiz.solicitacaoLuiz = dataEnvio;
+    google.script.run.salvarAcompanhamento(vp, 'solicitacaoLuiz', dataEnvio);
+    setTimeout(() => {
+      fecharModalEmailLuiz();
+      mostrarToast('✅ E-mail aberto no Gmail/Outlook e marcado como solicitado!');
+      renderValePaletes();
+      renderProtocolos();
+    }, 600);
+  }
+
+  function fecharModalEmailLuiz() {
+    document.getElementById('modalEmailLuiz').style.display = 'none';
+    regParaEnvioLuiz = null;
+  }
+
+  function confirmarEnvioEmailLuiz() {
+    if (!regParaEnvioLuiz) return;
+    const btnEnviar = document.getElementById('modal-btn-enviar');
+    btnEnviar.disabled = true;
+    btnEnviar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+
+    const dadosEnvio = {
+      valePalete: regParaEnvioLuiz.valePalete,
+      plano: regParaEnvioLuiz.plano,
+      ocorrencia: formatData(regParaEnvioLuiz.dataOcorrencia),
+      cliente: regParaEnvioLuiz.cliente,
+      motorista: regParaEnvioLuiz.motorista,
+      placa: regParaEnvioLuiz.placa,
+      qtdePaletes: regParaEnvioLuiz.qtdePaletes,
+      valor: formatMoney((regParaEnvioLuiz.qtdePaletes || 0) * 35),
+      numeroProtocolo: regParaEnvioLuiz.numeroProtocolo
+    };
+
+    google.script.run
+      .withSuccessHandler(res => {
+        const resp = JSON.parse(res);
+        if (resp.success) {
+          if (regParaEnvioLuiz) {
+            regParaEnvioLuiz.solicitacaoLuiz = resp.dataEnvio || 'Enviado';
+          }
+          fecharModalEmailLuiz();
+          mostrarToast('✅ E-mail enviado com sucesso para luizhenrique@3coracoes.com.br!');
+          renderValePaletes();
+          renderProtocolos();
+        } else {
+          const errStr = String(resp.error || '');
+          if (errStr.includes('MailApp') || errStr.includes('permissão') || errStr.includes('script.send_mail')) {
+            alert('⚠️ Permissão do Google Necessária:\n\nComo é a primeira vez que o sistema envia e-mails, o Google exige autorizar o script.\n\n👉 Para liberar o envio automático direto: abra o editor do Apps Script e execute a função "autorizarPermissoes" clicando em "Executar" e depois em "Permitir".\n\n👉 Enquanto isso: você pode clicar no botão "Abrir no E-mail" para enviar pelo seu Gmail/Outlook com o texto pronto!');
+          } else {
+            alert('Erro ao enviar e-mail: ' + resp.error);
+          }
+          btnEnviar.disabled = false;
+          btnEnviar.innerHTML = '<i class="fas fa-paper-plane"></i> Tentar Novamente';
+        }
+      })
+      .withFailureHandler(err => {
+        const errStr = String(err || '');
+        if (errStr.includes('MailApp') || errStr.includes('permissão') || errStr.includes('script.send_mail')) {
+          alert('⚠️ Permissão do Google Necessária:\n\nComo é a primeira vez que o sistema envia e-mails, o Google exige autorizar o script.\n\n👉 Para liberar o envio automático direto: abra o editor do Apps Script e execute a função "autorizarPermissoes" clicando em "Executar" e depois em "Permitir".\n\n👉 Enquanto isso: você pode clicar no botão "Abrir no E-mail" para enviar pelo seu Gmail/Outlook com o texto pronto!');
+        } else {
+          alert('Erro na comunicação: ' + err);
+        }
+        btnEnviar.disabled = false;
+        btnEnviar.innerHTML = '<i class="fas fa-paper-plane"></i> Tentar Novamente';
+      })
+      .solicitarBaixaLuiz(dadosEnvio);
+  }
+
+  function mostrarToast(msg) {
+    const toast = document.getElementById('toastNotification');
+    if (!toast) return;
+    toast.innerHTML = `<i class="fas fa-check-circle"></i> ${msg}`;
+    toast.style.display = 'flex';
+    setTimeout(() => {
+      toast.style.display = 'none';
+    }, 4000);
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
   }
 
   /* ===== CHARTS ===== */

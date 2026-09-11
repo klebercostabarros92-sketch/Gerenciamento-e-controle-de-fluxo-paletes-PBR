@@ -180,4 +180,219 @@
   .chart-container { background: var(--chart-bg); padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: background 0.3s; }
 
   h2 { font-size: 1.3rem; color: var(--header-color); margin-bottom: 5px; }
+
+  /* ===== STATUS MOTORISTA SELECT ===== */
+  .select-status-mot {
+    padding: 5px 8px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1px solid transparent;
+    outline: none;
+    transition: all 0.2s;
+  }
+  .select-status-mot.mot-ativo {
+    background-color: #dcfce7;
+    color: #166534;
+    border-color: #86efac;
+  }
+  .select-status-mot.mot-inativo {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border-color: #fca5a5;
+  }
+  body.dark .select-status-mot.mot-ativo {
+    background-color: #14532d;
+    color: #86efac;
+    border-color: #22c55e;
+  }
+  body.dark .select-status-mot.mot-inativo {
+    background-color: #450a0a;
+    color: #fca5a5;
+    border-color: #ef4444;
+  }
+
+  /* ===== CAMPO AÇÃO / TRATATIVA ===== */
+  .col-acao-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 175px;
+  }
+  .input-link-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .input-link-acao {
+    padding: 5px 8px;
+    font-size: 0.78rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--input-bg);
+    color: var(--text-primary);
+    width: 130px;
+    outline: none;
+    transition: border 0.2s;
+  }
+  .input-link-acao:focus {
+    border-color: var(--color-blue);
+  }
+  .btn-open-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    background: #3b82f6;
+    color: #fff !important;
+    text-decoration: none;
+    font-size: 0.75rem;
+    transition: background 0.2s;
+  }
+  .btn-open-link:hover {
+    background: #1d4ed8;
+  }
+
+  /* ===== BOTÃO SOLICITAR AO LUIZ ===== */
+  .btn-solicitar-luiz {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #fff;
+    border: none;
+    padding: 6px 11px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 2px 4px rgba(37,99,235,0.25);
+    white-space: nowrap;
+  }
+  .btn-solicitar-luiz:hover {
+    background: linear-gradient(135deg, #1d4ed8, #1e40af);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(37,99,235,0.35);
+  }
+  .btn-solicitar-luiz.ja-enviado {
+    background: #059669;
+    box-shadow: none;
+  }
+
+  /* ===== MODAL SOLICITAÇÃO LUIZ ===== */
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    animation: fadeIn 0.2s ease-out;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .modal-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    width: 92%;
+    max-width: 580px;
+    padding: 24px;
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
+    color: var(--text-primary);
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .modal-header h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    color: var(--header-color);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .modal-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    color: var(--text-light);
+    cursor: pointer;
+    line-height: 1;
+  }
+  .modal-close-btn:hover {
+    color: var(--color-red);
+  }
+  .modal-destinatario-tag {
+    display: inline-block;
+    background: #dbeafe;
+    color: #1e40af;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    margin-bottom: 12px;
+  }
+  body.dark .modal-destinatario-tag {
+    background: #1e3a5f;
+    color: #93c5fd;
+  }
+  .modal-info-box {
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+    margin: 12px 0;
+  }
+  .modal-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    font-size: 0.84rem;
+  }
+  .modal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border-color);
+  }
+
+  /* ===== TOAST NOTIFICATION ===== */
+  .toast-notification {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #10b981;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: slideUp 0.3s ease-out;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
 </style>

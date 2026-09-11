@@ -1,6 +1,7 @@
 function realizarCruzamento() {
   const base3Coracoes = getBase3Coracoes();
   const protocolosMap = getProtocolos();
+  const acompanhamentoMap = typeof getAcompanhamentoMap === 'function' ? getAcompanhamentoMap() : {};
   
   const registrosCruzados = base3Coracoes.map(reg => {
     const vpNormalizado = normalizeString(reg.valePalete);
@@ -41,12 +42,18 @@ function realizarCruzamento() {
       cor = '🔴';
     }
     
+    const vpKey = String(reg.valePalete || '').trim();
+    const ac = acompanhamentoMap[vpKey] || {};
+
     return {
       ...reg,
       vpNormalizado,
       planoNormalizado,
       temProtocolo,
       numeroProtocolo,
+      statusMotorista: ac.statusMotorista || 'ATIVO',
+      linkAcao: ac.linkAcao || '',
+      solicitacaoLuiz: ac.solicitacaoLuiz || '',
       horasAberto,
       diasAberto,
       dataLimite: calcularDataLimite(reg.dataOcorrencia),
