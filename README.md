@@ -1,10 +1,3 @@
-# Olá, sou o Kleber Costa! 👋
-
-Analista de Automação & Inteligência de Processos Operacionais na **THX Transportes**.  
-Especialista em construir soluções com **Google Apps Script**, **Python (Pitão)**, **VBA/Excel** e integração via **APIs / Webhooks**, conectando código diretamente a métricas e eliminação de gargalos logísticos (**Lean** & **Teoria das Restrições**).
-
----
-
 ### 🚀 Projeto em Destaque: Sistema de Gestão de Fluxo de Vale-Paletes PBR
 > **Web App corporativo (Google Apps Script + JavaScript)** desenvolvido para conciliação documental, gestão visual e mitigação de passivos financeiros entre a **THX** e a **3 Corações**.
 
